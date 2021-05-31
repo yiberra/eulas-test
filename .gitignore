@@ -6,6 +6,7 @@
 /public/bundles/
 /var/
 /vendor/
+/csv/
 ###< symfony/framework-bundle ###
 
 ###> phpunit/phpunit ###
