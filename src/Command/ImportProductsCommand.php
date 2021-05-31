@@ -8,6 +8,9 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+use JsonMachine\JsonMachine;
+use JsonMachine\JsonDecoder\ExtJsonDecoder;
+
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
@@ -39,23 +42,14 @@ class ImportProductsCommand extends Command
         
         $filePath = $this->params->get('json_file_path');
 
-        // Get content of file
-        $json = \file_get_contents($filePath);
-        $json = \utf8_encode($json);
-        
-        // Check file content
-        if(!$json){
-            $output->writeln('<fg=white;bg=red>[ERROR] JSON file is empty or its corrupted</>');
+        // Check file exists
+        if(!file_exists($filePath)){
+            $output->writeln('<fg=white;bg=red>[ERROR] JSON file not exists</>');
             return Command::FAILURE;
         }
 
-        // Check if json_decode fail
-        if(json_last_error() !== JSON_ERROR_NONE){
-            $output->writeln('<fg=white;bg=red>[ERROR] JSON file decode failed</>');
-            return Command::FAILURE;
-        }
-
-        $products = \json_decode($json);
+        $fileSize = filesize($filePath);
+        $products = JsonMachine::fromFile($filePath, '', new ExtJsonDecoder);
 
         if(!empty($products)){
 
@@ -66,100 +60,92 @@ class ImportProductsCommand extends Command
             $file->setCreatedAt(new \Datetime());
             $this->em->persist($file);
             $this->em->flush();
+            
+            foreach($products as $key => $product){
 
-            $productsChunk = array_chunk($products, 1000);
+                // Currency must be USD
+                if($product->price->currency !== 'USD'){
+                    $output->writeln('<fg=white;bg=red>[ERROR] The product '.$product->styleNumber.' cannot be saved: the currency must be USD</>');
+                    continue;
+                }
 
-            foreach($productsChunk as $kL => $list){
+                // Search product by styleNumber
+                $p = $this->em->getRepository(Product::class)->findOneBy(['styleNumber' => $product->styleNumber]);
 
-                foreach($list as $key => $product){
+                // If product not exists, insert into DB
+                if(!$p){
 
-                    // Currency must be USD
-                    if($product->price->currency !== 'USD'){
-                        $output->writeln('<fg=white;bg=red>[ERROR] The product '.$product->styleNumber.' cannot be saved: the currency must be USD</>');
-                        continue;
+                    $this->em->getConnection()->beginTransaction();
+
+                    try {
+
+                        $p = new Product();
+                        $p->setStyleNumber($product->styleNumber);
+                        $p->setName($product->name);
+                        $p->setPriceAmount($product->price->amount);
+                        $p->setPriceCurrency($product->price->currency);
+                        $p->setImages($product->images);
+                        $p->setState('toSync');
+                        
+                        $this->em->persist($p);
+                        $this->em->flush();
+                        $this->em->getConnection()->commit();
+
+                    } catch (\Exception $e) {
+
+                        $this->em->getConnection()->rollBack();
+                        $output->writeln('<fg=white;bg=red>[ERROR] The product '.$product->styleNumber.' cannot be saved: '.$e->getMessage().'</>');
+
                     }
+                
+                // ... updated product
+                } else {
 
-                    // Search product by styleNumber
-                    $p = $this->em->getRepository(Product::class)->findOneBy(['styleNumber' => $product->styleNumber]);
+                    $this->em->getConnection()->beginTransaction();
 
-                    // If product not exists, insert into DB
-                    if(!$p){
+                    try {
 
-                        $this->em->getConnection()->beginTransaction();
+                        $p->setState('imported');
 
-                        try {
+                        // If the product has changed change state to sync
 
-                            $p = new Product();
+                        if($p->getStyleNumber() != $product->styleNumber){
                             $p->setStyleNumber($product->styleNumber);
+                            $p->setState('toSync');
+                        }
+
+                        if($p->getName() != $product->name){
                             $p->setName($product->name);
+                            $p->setState('toSync');
+                        }
+
+                        if($p->getPriceAmount() != $product->price->amount){
                             $p->setPriceAmount($product->price->amount);
+                            $p->setState('toSync');
+                        }
+
+                        if($p->getPriceCurrency() != $product->price->currency){
                             $p->setPriceCurrency($product->price->currency);
+                            $p->setState('toSync');
+                        }
+
+                        if($p->getImages() != $product->images){
                             $p->setImages($product->images);
                             $p->setState('toSync');
-                            
-                            $this->em->persist($p);
-                            $this->em->flush();
-                            $this->em->getConnection()->commit();
-
-                        } catch (\Exception $e) {
-
-                            $this->em->getConnection()->rollBack();
-                            $output->writeln('<fg=white;bg=red>[ERROR] The product '.$product->styleNumber.' cannot be saved: '.$e->getMessage().'</>');
-
-                        }
-                    
-                    // ... updated product
-                    } else {
-
-                        $this->em->getConnection()->beginTransaction();
-
-                        try {
-
-                            $p->setState('imported');
-
-                            // If the product has changed change state to sync
-
-                            if($p->getStyleNumber() != $product->styleNumber){
-                                $p->setStyleNumber($product->styleNumber);
-                                $p->setState('toSync');
-                            }
-
-                            if($p->getName() != $product->name){
-                                $p->setName($product->name);
-                                $p->setState('toSync');
-                            }
-
-                            if($p->getPriceAmount() != $product->price->amount){
-                                $p->setPriceAmount($product->price->amount);
-                                $p->setState('toSync');
-                            }
-
-                            if($p->getPriceCurrency() != $product->price->currency){
-                                $p->setPriceCurrency($product->price->currency);
-                                $p->setState('toSync');
-                            }
-
-                            if($p->getImages() != $product->images){
-                                $p->setImages($product->images);
-                                $p->setState('toSync');
-                            }
-
-                            $this->em->persist($p);
-                            $this->em->flush();
-                            $this->em->getConnection()->commit();
-
-                        } catch (\Exception $e) {
-
-                            $this->em->getConnection()->rollBack();
-                            $output->writeln('<fg=white;bg=red>[ERROR] The product '.$product->styleNumber.' cannot be updated: '.$e->getMessage().'</>');
-                            
                         }
 
+                        $this->em->persist($p);
+                        $this->em->flush();
+                        $this->em->getConnection()->commit();
+
+                    } catch (\Exception $e) {
+
+                        $this->em->getConnection()->rollBack();
+                        $output->writeln('<fg=white;bg=red>[ERROR] The product '.$product->styleNumber.' cannot be updated: '.$e->getMessage().'</>');
+                        
                     }
 
                 }
-
-                unset($productsChunk[$kL]);
 
             }
 
@@ -174,7 +160,6 @@ class ImportProductsCommand extends Command
             $output->writeln('<fg=black;bg=cyan>[OK] Products list is empty. Nothing to do.</>');
 
         }
-
 
         return Command::SUCCESS;
 
