@@ -41,22 +41,26 @@ class ExportCsvProductsCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
 
+        // CSV file path
         $filePath = $this->params->get('csv_file_path');
-        if(!\file_exists($filePath)){
-            $handle = \fopen($filePath, 'a+');
-            \fclose($handle);
-        }
         
         // Search product by toSync
         $products = $this->em->getRepository(Product::class)->findBy(['state' => 'toSync']);
 
-        $data = [];
+        // Products array to sync
+        $productsToSync = [];
 
         if(!empty($products)){
 
+            // Create file
+            if(!\file_exists($filePath)){
+                $handle = \fopen($filePath, 'a+');
+                \fclose($handle);
+            }
+
             foreach($products as $k => $p){
                 
-                $data[] = array(
+                $productsToSync[] = array(
                     "Product Id" => $p->getStyleNumber(),
                     "Product Name" => $p->getName(),
                     "Price" => $p->getPriceCurrency().$p->getPriceAmount(),
@@ -75,8 +79,8 @@ class ExportCsvProductsCommand extends Command
 
         }
 
-
-        if(!empty($data)){
+        // If products list is empty
+        if(!empty($productsToSync)){
 
             // Serializer
             $serializer = new Serializer([new ObjectNormalizer()], [new CsvEncoder()]);
@@ -95,9 +99,9 @@ class ExportCsvProductsCommand extends Command
                 "Image 9"
             ]);
 
-            $csv = $serializer->encode($data, 'csv', $context);
+            $csv = $serializer->encode($productsToSync, 'csv', $context);
 
-            unset($data);
+            unset($productsToSync);
 
             if(file_put_contents($filePath, $csv)){
 
