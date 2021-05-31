@@ -6,11 +6,14 @@
 /public/bundles/
 /var/
 /vendor/
-/csv/
-/listProduct.php
 ###< symfony/framework-bundle ###
 
 ###> phpunit/phpunit ###
 /phpunit.xml
 .phpunit.result.cache
 ###< phpunit/phpunit ###
+
+/csv/syncList.csv
+/listProduct.php
+/symfony.lock
+/composer.lock
