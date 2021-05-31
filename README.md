@@ -209,6 +209,8 @@ php bin/console export:csv:products
 
 ## Testing
 
+- For run test commands on console:
+
 ```
 php ./vendor/bin/phpunit
 ```
