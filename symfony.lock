@@ -383,6 +383,12 @@
     "symfony/polyfill-php80": {
         "version": "v1.20.0"
     },
+    "symfony/property-access": {
+        "version": "v5.2.4"
+    },
+    "symfony/property-info": {
+        "version": "v5.2.8"
+    },
     "symfony/redis-messenger": {
         "version": "v5.2.1"
     },
@@ -399,6 +405,9 @@
             "config/packages/routing.yaml",
             "config/routes.yaml"
         ]
+    },
+    "symfony/serializer": {
+        "version": "v5.2.9"
     },
     "symfony/service-contracts": {
         "version": "v2.0.1"

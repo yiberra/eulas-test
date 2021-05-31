@@ -5,6 +5,9 @@
 # https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
 parameters:
 
+    json_file_path: '%env(JSON_FILE_PATH)%'
+    csv_file_path: '%env(CSV_FILE_PATH)%'
+
 services:
     # default configuration for services in *this* file
     _defaults:

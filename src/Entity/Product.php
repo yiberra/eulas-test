@@ -44,9 +44,9 @@ class Product
     private $images = [];
 
     /**
-     * @ORM\Column(name="toSync", type="integer")
+     * @ORM\Column(name="state", type="string", length=100)
      */
-    private $toSync;
+    private $state;
 
 
     public function getId(): ?int
@@ -114,14 +114,14 @@ class Product
         return $this;
     }
 
-    public function getToSync(): ?bool
+    public function getState(): ?string
     {
-        return $this->toSync;
+        return $this->state;
     }
 
-    public function setToSync(?bool $toSync): self
+    public function setState(?string $state): self
     {
-        $this->toSync = $toSync;
+        $this->state = $state;
 
         return $this;
     }

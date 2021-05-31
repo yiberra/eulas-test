@@ -177,12 +177,38 @@ ABC|123,"T-Shirt",$150,"https://via.placeholder.com/400x300/4b0082?id=1","https:
 
 ## Installation
 
-TODO
+- Run script on console:
+
+```
+composer install
+```
+
+- Define environment variables in .env file
+	- JSON_FILE_PATH: path of JSON file which use to import products
+	- CSV_FILE_PATH: path of CSV file which use to export products
+	- DATABASE_URL: DB connection (mysql://{db_user}:{db_pass}@{db_host}:{port}/{db_name}?serverVersion={serverTypeAndVersion})
+
+- Run script on console for DB migrations
+```
+php bin/console doctrine:migrations:migrate
+```
 
 ## Usage
 
-TODO
+- For import JSON file run script on console:
+
+```
+php bin/console import:products
+```
+
+- For export CSV file run script on console:
+
+```
+php bin/console export:csv:products
+```
 
 ## Testing
 
-TODO
+```
+php ./vendor/bin/phpunit
+```

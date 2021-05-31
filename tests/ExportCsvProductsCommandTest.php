@@ -1,29 +1,26 @@
-<?php 
+<?php
 
-namespace App\Tests\Command;
+namespace App\Tests;
 
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 
-class ImportProductsCommandTest extends KernelTestCase
+class ExportCsvProductsCommandTest extends KernelTestCase
 {
-    public function testExecute()
+    public function testExport(): void
     {
+        
         $kernel = static::createKernel();
         $application = new Application($kernel);
 
-        $command = $application->find('import:products');
+        $command = $application->find('export:csv:products');
         $commandTester = new CommandTester($command);
-        $commandTester->execute([
-            // pass arguments to the helper
-            '--path' => '',
-        ]);
+        $commandTester->execute([]);
 
         // the output of the command in the console
         $output = $commandTester->getDisplay();
-        $this->assertStringContainsString('Username: Wouter', $output);
+        $this->assertStringContainsString('[OK]', $output);
 
-        // ...
     }
 }
