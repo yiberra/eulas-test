@@ -7,7 +7,7 @@
 /var/
 /vendor/
 /csv/
-listProduct.php
+/listProduct.php
 ###< symfony/framework-bundle ###
 
 ###> phpunit/phpunit ###
